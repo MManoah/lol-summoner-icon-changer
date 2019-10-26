@@ -1,7 +1,11 @@
 # League of Legends Hidden Summoner Icon Changer
 
 This little application made from Python using tkinter and the Riot LCU API allows you to change your summoner icon to any of the hidden chibi icons
-[Click Here To Download Application](https://github.com/MManoah/lol-summoner-icon-changer/releases/)
+
+## How to install 
+[Click Here To Download Application](https://github.com/MManoah/lol-summoner-icon-changer/releases/download/V.1/Summoner.Icon.Changer.zip)
+Extract all the files somewhere then run Summoner Icon Changer.exe
+
 ## Project Overview
 ![](https://i.gyazo.com/7c2e79cb1fe4ad29c7e03382739379c2.png)
 
