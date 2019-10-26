@@ -3,7 +3,7 @@
 This little application made from Python using tkinter and the Riot LCU API allows you to change your summoner icon to any of the hidden chibi icons
 
 ## Project Overview
-![alt text](https://i.gyazo.com/7c2e79cb1fe4ad29c7e03382739379c2.png)
+(https://i.gyazo.com/7c2e79cb1fe4ad29c7e03382739379c2.png)
 
 ## Built With
 
