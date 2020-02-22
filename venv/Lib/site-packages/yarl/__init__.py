@@ -1,3 +1,4 @@
+import sys
 import warnings
 from collections.abc import Mapping, Sequence
 from ipaddress import ip_address
@@ -9,12 +10,9 @@ import idna
 
 from .quoting import _Quoter, _Unquoter
 
-__version__ = "1.3.0"
+__version__ = "1.4.2"
 
 __all__ = ("URL",)
-
-
-# is_leaf()
 
 
 DEFAULT_PORTS = {"http": 80, "https": 443, "ws": 80, "wss": 443}
@@ -157,12 +155,14 @@ class URL:
             else:
                 host = val.hostname
                 if host is None:
-                    raise ValueError("Invalid URL: host is required for abolute urls.")
+                    raise ValueError("Invalid URL: host is required for absolute urls")
 
                 try:
                     port = val.port
-                except ValueError:
-                    raise ValueError("Invalid URL: port can't be converted to integer")
+                except ValueError as e:
+                    raise ValueError(
+                        "Invalid URL: port can't be converted to integer"
+                    ) from e
 
                 netloc = cls._make_netloc(
                     val.username, val.password, host, port, encode=True
@@ -186,8 +186,8 @@ class URL:
         cls,
         *,
         scheme="",
-        user="",
-        password="",
+        user=None,
+        password=None,
         host="",
         port=None,
         path="",
@@ -204,6 +204,11 @@ class URL:
             raise ValueError('Can\'t build URL with "port" but without "host".')
         if query and query_string:
             raise ValueError('Only one of "query" or "query_string" should be passed')
+        if path is None or query_string is None or fragment is None:
+            raise TypeError(
+                'NoneType is illegal for "path", "query_string" and '
+                '"fragment" args, use string values instead.'
+            )
 
         if not user and not password and not host and not port:
             netloc = ""
@@ -285,7 +290,9 @@ class URL:
     def __truediv__(self, name):
         name = self._PATH_QUOTER(name)
         if name.startswith("/"):
-            raise ValueError("Appending path " "starting from slash is forbidden")
+            raise ValueError(
+                "Appending path {!r} starting from slash is forbidden".format(name)
+            )
         path = self._val.path
         if path == "/":
             new_path = "/" + name
@@ -443,7 +450,6 @@ class URL:
             # fe80::2%Проверка
             # presence of '%' sign means only IPv6 address, so idna is useless.
             return raw
-
         try:
             return idna.decode(raw.encode("ascii"))
         except UnicodeError:  # e.g. '::1'
@@ -652,23 +658,54 @@ class URL:
 
         return "/".join(resolved_path)
 
-    @classmethod
-    def _encode_host(cls, host):
-        try:
-            ip, sep, zone = host.partition("%")
-            ip = ip_address(ip)
-        except ValueError:
+    if sys.version_info >= (3, 7):
+
+        @classmethod
+        def _encode_host(cls, host):
             try:
-                host = idna.encode(host, uts46=True).decode("ascii")
-            except UnicodeError:
-                host = host.encode("idna").decode("ascii")
-        else:
-            host = ip.compressed
-            if sep:
-                host += "%" + zone
-            if ip.version == 6:
-                host = "[" + host + "]"
-        return host
+                ip, sep, zone = host.partition("%")
+                ip = ip_address(ip)
+            except ValueError:
+                # IDNA encoding is slow,
+                # skip it for ASCII-only strings
+                if host.isascii():
+                    return host
+                try:
+                    host = idna.encode(host, uts46=True).decode("ascii")
+                except UnicodeError:
+                    host = host.encode("idna").decode("ascii")
+            else:
+                host = ip.compressed
+                if sep:
+                    host += "%" + zone
+                if ip.version == 6:
+                    host = "[" + host + "]"
+            return host
+
+    else:
+        # work around for missing str.isascii() in Python <= 3.6
+        @classmethod
+        def _encode_host(cls, host):
+            try:
+                ip, sep, zone = host.partition("%")
+                ip = ip_address(ip)
+            except ValueError:
+                for char in host:
+                    if char > "\x7f":
+                        break
+                else:
+                    return host
+                try:
+                    host = idna.encode(host, uts46=True).decode("ascii")
+                except UnicodeError:
+                    host = host.encode("idna").decode("ascii")
+            else:
+                host = ip.compressed
+                if sep:
+                    host += "%" + zone
+                if ip.version == 6:
+                    host = "[" + host + "]"
+            return host
 
     @classmethod
     def _make_netloc(cls, user, password, host, port, encode):
@@ -678,7 +715,7 @@ class URL:
             ret = host
         if port:
             ret = ret + ":" + str(port)
-        if password:
+        if password is not None:
             if not user:
                 user = ""
             else:
@@ -906,12 +943,14 @@ class URL:
         """
         # N.B. doesn't cleanup query/fragment
         if fragment is None:
-            fragment = ""
+            raw_fragment = ""
         elif not isinstance(fragment, str):
             raise TypeError("Invalid fragment type")
-        return URL(
-            self._val._replace(fragment=self._FRAGMENT_QUOTER(fragment)), encoded=True
-        )
+        else:
+            raw_fragment = self._FRAGMENT_QUOTER(fragment)
+        if self.raw_fragment == raw_fragment:
+            return self
+        return URL(self._val._replace(fragment=raw_fragment), encoded=True)
 
     def with_name(self, name):
         """Return a new URL with name (last part of path) replaced.

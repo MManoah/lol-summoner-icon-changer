@@ -1,17 +1,16 @@
-from collections import abc
-from collections.abc import Set, Iterable
+from collections.abc import ItemsView, Iterable, KeysView, Set, ValuesView
 
 
 def _abc_itemsview_register(view_cls):
-    abc.ItemsView.register(view_cls)
+    ItemsView.register(view_cls)
 
 
 def _abc_keysview_register(view_cls):
-    abc.KeysView.register(view_cls)
+    KeysView.register(view_cls)
 
 
 def _abc_valuesview_register(view_cls):
-    abc.ValuesView.register(view_cls)
+    ValuesView.register(view_cls)
 
 
 def _viewbaseset_richcmp(view, other, op):
@@ -98,7 +97,7 @@ def _viewbaseset_xor(view, other):
 
 
 def _itemsview_isdisjoint(view, other):
-    'Return True if two sets have a null intersection.'
+    "Return True if two sets have a null intersection."
     for v in other:
         if v in view:
             return False
@@ -109,12 +108,12 @@ def _itemsview_repr(view):
     lst = []
     for k, v in view:
         lst.append("{!r}: {!r}".format(k, v))
-    body = ', '.join(lst)
-    return '{}({})'.format(view.__class__.__name__, body)
+    body = ", ".join(lst)
+    return "{}({})".format(view.__class__.__name__, body)
 
 
 def _keysview_isdisjoint(view, other):
-    'Return True if two sets have a null intersection.'
+    "Return True if two sets have a null intersection."
     for k in other:
         if k in view:
             return False
@@ -125,13 +124,21 @@ def _keysview_repr(view):
     lst = []
     for k in view:
         lst.append("{!r}".format(k))
-    body = ', '.join(lst)
-    return '{}({})'.format(view.__class__.__name__, body)
+    body = ", ".join(lst)
+    return "{}({})".format(view.__class__.__name__, body)
 
 
 def _valuesview_repr(view):
     lst = []
     for v in view:
         lst.append("{!r}".format(v))
-    body = ', '.join(lst)
-    return '{}({})'.format(view.__class__.__name__, body)
+    body = ", ".join(lst)
+    return "{}({})".format(view.__class__.__name__, body)
+
+
+def _mdrepr(md):
+    lst = []
+    for k, v in md.items():
+        lst.append("'{}': {!r}".format(k, v))
+    body = ", ".join(lst)
+    return "<{}({})>".format(md.__class__.__name__, body)

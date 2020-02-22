@@ -1,9 +1,8 @@
+import sys
 from array import array
 from collections import abc
-import sys
 
 from ._abc import MultiMapping, MutableMultiMapping
-
 
 _marker = object()
 
@@ -13,21 +12,6 @@ class istr(str):
     """Case insensitive str."""
 
     __is_istr__ = True
-
-    def __new__(cls, val='',
-                encoding=sys.getdefaultencoding(), errors='strict'):
-        if getattr(val, '__is_istr__', False):
-            # Faster than instance check
-            return val
-        if type(val) is str:
-            pass
-        else:
-            val = str(val)
-        val = val.title()
-        return str.__new__(cls, val)
-
-    def title(self):
-        return self
 
 
 upstr = istr  # for relaxing backward compatibility problems
@@ -39,11 +23,11 @@ def getversion(md):
     return md._impl._version
 
 
-_version = array('Q', [0])
+_version = array("Q", [0])
 
 
 class _Impl:
-    __slots__ = ('_items', '_version')
+    __slots__ = ("_items", "_version")
 
     def __init__(self):
         self._items = []
@@ -55,9 +39,12 @@ class _Impl:
         v[0] += 1
         self._version = v[0]
 
+    if sys.implementation.name != "pypy":
+        def __sizeof__(self):
+            return object.__sizeof__(self) + sys.getsizeof(self._items)
+
 
 class _Base:
-
     def _title(self, key):
         return key
 
@@ -69,7 +56,7 @@ class _Base:
             return res
         if not res and default is not _marker:
             return default
-        raise KeyError('Key not found: %r' % key)
+        raise KeyError("Key not found: %r" % key)
 
     def getone(self, key, default=_marker):
         """Get first value matching the key."""
@@ -79,7 +66,7 @@ class _Base:
                 return v
         if default is not _marker:
             return default
-        raise KeyError('Key not found: %r' % key)
+        raise KeyError("Key not found: %r" % key)
 
     # Mapping interface #
 
@@ -139,24 +126,24 @@ class _Base:
         return False
 
     def __repr__(self):
-        body = ', '.join("'{}': {!r}".format(k, v) for k, v in self.items())
-        return '<{}({})>'.format(self.__class__.__name__, body)
+        body = ", ".join("'{}': {!r}".format(k, v) for k, v in self.items())
+        return "<{}({})>".format(self.__class__.__name__, body)
 
 
 class MultiDictProxy(_Base, MultiMapping):
+    """Read-only proxy for MultiDict instance."""
 
     def __init__(self, arg):
         if not isinstance(arg, (MultiDict, MultiDictProxy)):
             raise TypeError(
-                'ctor requires MultiDict or MultiDictProxy instance'
-                ', not {}'.format(
-                    type(arg)))
+                "ctor requires MultiDict or MultiDictProxy instance"
+                ", not {}".format(type(arg))
+            )
 
         self._impl = arg._impl
 
     def __reduce__(self):
-        raise TypeError("can't pickle {} objects".format(
-            self.__class__.__name__))
+        raise TypeError("can't pickle {} objects".format(self.__class__.__name__))
 
     def copy(self):
         """Return a copy of itself."""
@@ -164,13 +151,14 @@ class MultiDictProxy(_Base, MultiMapping):
 
 
 class CIMultiDictProxy(MultiDictProxy):
+    """Read-only proxy for CIMultiDict instance."""
 
     def __init__(self, arg):
         if not isinstance(arg, (CIMultiDict, CIMultiDictProxy)):
             raise TypeError(
-                'ctor requires CIMultiDict or CIMultiDictProxy instance'
-                ', not {}'.format(
-                    type(arg)))
+                "ctor requires CIMultiDict or CIMultiDictProxy instance"
+                ", not {}".format(type(arg))
+            )
 
         self._impl = arg._impl
 
@@ -183,12 +171,16 @@ class CIMultiDictProxy(MultiDictProxy):
 
 
 class MultiDict(_Base, MutableMultiMapping):
+    """Dictionary with the support for duplicate keys."""
 
     def __init__(self, *args, **kwargs):
         self._impl = _Impl()
 
-        self._extend(args, kwargs, self.__class__.__name__,
-                     self._extend_items)
+        self._extend(args, kwargs, self.__class__.__name__, self._extend_items)
+
+    if sys.implementation.name != "pypy":
+        def __sizeof__(self):
+            return object.__sizeof__(self) + sys.getsizeof(self._impl)
 
     def __reduce__(self):
         return (self.__class__, (list(self.items()),))
@@ -200,8 +192,9 @@ class MultiDict(_Base, MutableMultiMapping):
         if isinstance(key, str):
             return key
         else:
-            raise TypeError("MultiDict keys should be either str "
-                            "or subclasses of str")
+            raise TypeError(
+                "MultiDict keys should be either str " "or subclasses of str"
+            )
 
     def add(self, key, value):
         identity = self._title(key)
@@ -220,18 +213,20 @@ class MultiDict(_Base, MutableMultiMapping):
 
         This method must be used instead of update.
         """
-        self._extend(args, kwargs, 'extend', self._extend_items)
+        self._extend(args, kwargs, "extend", self._extend_items)
 
     def _extend(self, args, kwargs, name, method):
         if len(args) > 1:
-            raise TypeError("{} takes at most 1 positional argument"
-                            " ({} given)".format(name, len(args)))
+            raise TypeError(
+                "{} takes at most 1 positional argument"
+                " ({} given)".format(name, len(args))
+            )
         if args:
             arg = args[0]
             if isinstance(args[0], (MultiDict, MultiDictProxy)) and not kwargs:
                 items = arg._impl._items
             else:
-                if hasattr(arg, 'items'):
+                if hasattr(arg, "items"):
                     arg = arg.items()
                 if kwargs:
                     arg = list(arg)
@@ -241,15 +236,18 @@ class MultiDict(_Base, MutableMultiMapping):
                     if not len(item) == 2:
                         raise TypeError(
                             "{} takes either dict or list of (key, value) "
-                            "tuples".format(name))
-                    items.append((self._title(item[0]),
-                                  self._key(item[0]),
-                                  item[1]))
+                            "tuples".format(name)
+                        )
+                    items.append((self._title(item[0]), self._key(item[0]), item[1]))
 
             method(items)
         else:
-            method([(self._title(key), self._key(key), value)
-                    for key, value in kwargs.items()])
+            method(
+                [
+                    (self._title(key), self._key(key), value)
+                    for key, value in kwargs.items()
+                ]
+            )
 
     def _extend_items(self, items):
         for identity, key, value in items:
@@ -306,7 +304,7 @@ class MultiDict(_Base, MutableMultiMapping):
         else:
             return default
 
-    pop = popone
+    pop = popone  # type: ignore
 
     def popall(self, key, default=_marker):
         """Remove all occurrences of key and return the list of corresponding
@@ -319,7 +317,7 @@ class MultiDict(_Base, MutableMultiMapping):
         found = False
         identity = self._title(key)
         ret = []
-        for i in range(len(self._impl._items)-1, -1, -1):
+        for i in range(len(self._impl._items) - 1, -1, -1):
             item = self._impl._items[i]
             if item[0] == identity:
                 ret.append(item[2])
@@ -346,7 +344,7 @@ class MultiDict(_Base, MutableMultiMapping):
 
     def update(self, *args, **kwargs):
         """Update the dictionary from *other*, overwriting existing keys."""
-        self._extend(args, kwargs, 'update', self._update_items)
+        self._extend(args, kwargs, "update", self._update_items)
 
     def _update_items(self, items):
         if not items:
@@ -409,13 +407,30 @@ class MultiDict(_Base, MutableMultiMapping):
 
 
 class CIMultiDict(MultiDict):
+    """Dictionary with the support for duplicate case-insensitive keys."""
 
     def _title(self, key):
         return key.title()
 
 
-class _ViewBase:
+class _Iter:
+    __slots__ = ("_size", "_iter")
 
+    def __init__(self, size, iterator):
+        self._size = size
+        self._iter = iterator
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return next(self._iter)
+
+    def __length_hint__(self):
+        return self._size
+
+
+class _ViewBase:
     def __init__(self, impl):
         self._impl = impl
         self._version = impl._version
@@ -425,7 +440,6 @@ class _ViewBase:
 
 
 class _ItemsView(_ViewBase, abc.ItemsView):
-
     def __contains__(self, item):
         assert isinstance(item, tuple) or isinstance(item, list)
         assert len(item) == 2
@@ -435,6 +449,9 @@ class _ItemsView(_ViewBase, abc.ItemsView):
         return False
 
     def __iter__(self):
+        return _Iter(len(self), self._iter())
+
+    def _iter(self):
         for i, k, v in self._impl._items:
             if self._version != self._impl._version:
                 raise RuntimeError("Dictionary changed during iteration")
@@ -444,12 +461,11 @@ class _ItemsView(_ViewBase, abc.ItemsView):
         lst = []
         for item in self._impl._items:
             lst.append("{!r}: {!r}".format(item[1], item[2]))
-        body = ', '.join(lst)
-        return '{}({})'.format(self.__class__.__name__, body)
+        body = ", ".join(lst)
+        return "{}({})".format(self.__class__.__name__, body)
 
 
 class _ValuesView(_ViewBase, abc.ValuesView):
-
     def __contains__(self, value):
         for item in self._impl._items:
             if item[2] == value:
@@ -457,6 +473,9 @@ class _ValuesView(_ViewBase, abc.ValuesView):
         return False
 
     def __iter__(self):
+        return _Iter(len(self), self._iter())
+
+    def _iter(self):
         for item in self._impl._items:
             if self._version != self._impl._version:
                 raise RuntimeError("Dictionary changed during iteration")
@@ -466,12 +485,11 @@ class _ValuesView(_ViewBase, abc.ValuesView):
         lst = []
         for item in self._impl._items:
             lst.append("{!r}".format(item[2]))
-        body = ', '.join(lst)
-        return '{}({})'.format(self.__class__.__name__, body)
+        body = ", ".join(lst)
+        return "{}({})".format(self.__class__.__name__, body)
 
 
 class _KeysView(_ViewBase, abc.KeysView):
-
     def __contains__(self, key):
         for item in self._impl._items:
             if item[1] == key:
@@ -479,6 +497,9 @@ class _KeysView(_ViewBase, abc.KeysView):
         return False
 
     def __iter__(self):
+        return _Iter(len(self), self._iter())
+
+    def _iter(self):
         for item in self._impl._items:
             if self._version != self._impl._version:
                 raise RuntimeError("Dictionary changed during iteration")
@@ -488,5 +509,5 @@ class _KeysView(_ViewBase, abc.KeysView):
         lst = []
         for item in self._impl._items:
             lst.append("{!r}".format(item[1]))
-        body = ', '.join(lst)
-        return '{}({})'.format(self.__class__.__name__, body)
+        body = ", ".join(lst)
+        return "{}({})".format(self.__class__.__name__, body)

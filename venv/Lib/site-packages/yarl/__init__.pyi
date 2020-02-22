@@ -37,12 +37,12 @@ class URL:
         cls,
         *,
         scheme: str = ...,
-        user: str = ...,
-        password: str = ...,
+        user: Optional[str] = ...,
+        password: Optional[str] = ...,
         host: str = ...,
         port: Optional[int] = ...,
         path: str = ...,
-        query: Query = ...,
+        query: Optional[Query] = ...,
         query_string: str = ...,
         fragment: str = ...,
         encoded: bool = ...
@@ -68,11 +68,11 @@ class URL:
     def with_path(self, path: str, *, encoded: bool = ...) -> URL: ...
     @overload
     def with_query(self, query: Query) -> URL: ...
-    @overload  # noqa: F811
+    @overload
     def with_query(self, **kwargs: QueryVariable) -> URL: ...
     @overload
     def update_query(self, query: Query) -> URL: ...
-    @overload  # noqa: F811
+    @overload
     def update_query(self, **kwargs: QueryVariable) -> URL: ...
     def with_fragment(self, fragment: Optional[str]) -> URL: ...
     def with_name(self, name: str) -> URL: ...

@@ -1,4 +1,4 @@
-#!"C:\Users\Manoah\Desktop\Sumoner Icon Editor\venv\Scripts\python.exe"
+#!"E:\PyCharm Projects\Summoner Icon Changer Updated\venv\Scripts\python.exe"
 # EASY-INSTALL-ENTRY-SCRIPT: 'pip==19.0.3','console_scripts','pip3.7'
 __requires__ = 'pip==19.0.3'
 import re

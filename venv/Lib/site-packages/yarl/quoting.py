@@ -1,6 +1,15 @@
+import os
 import re
+import sys
 from string import ascii_letters, ascii_lowercase, digits
 from typing import Optional, TYPE_CHECKING, cast
+
+
+NO_EXTENSIONS = bool(os.environ.get("YARL_NO_EXTENSIONS"))  # type: bool
+
+if sys.implementation.name != "cpython":
+    NO_EXTENSIONS = True
+
 
 BASCII_LOWERCASE = ascii_lowercase.encode("ascii")
 BPCT_ALLOWED = {"%{:02X}".format(i).encode("ascii") for i in range(256)}
@@ -99,7 +108,10 @@ class _Quoter:
 
             ret.extend(("%{:02X}".format(ch)).encode("ascii"))
 
-        return ret.decode("ascii")
+        ret2 = ret.decode("ascii")
+        if ret2 == val:
+            return val
+        return ret2
 
 
 class _Unquoter:
@@ -140,7 +152,7 @@ class _Unquoter:
                             raise RuntimeError("Cannot quote None")
                         ret.append(to_add)
                     elif unquoted in self._unsafe:
-                        to_add = self._qs_quoter(unquoted)
+                        to_add = self._quoter(unquoted)
                         if to_add is None:  # pragma: no cover
                             raise RuntimeError("Cannot quote None")
                         ret.append(to_add)
@@ -190,13 +202,16 @@ class _Unquoter:
                     ret.append(to_add)
                 else:
                     ret.append(unquoted)
-        return "".join(ret)
+        ret2 = "".join(ret)
+        if ret2 == val:
+            return val
+        return ret2
 
 
 _PyQuoter = _Quoter
 _PyUnquoter = _Unquoter
 
-if not TYPE_CHECKING:  # pragma: no branch
+if not TYPE_CHECKING and not NO_EXTENSIONS:  # pragma: no branch
     try:
         from ._quoting import _Quoter, _Unquoter
     except ImportError:  # pragma: no cover
