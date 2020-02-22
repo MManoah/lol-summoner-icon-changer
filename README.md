@@ -9,6 +9,7 @@ then extract all the files somewhere and run Summoner Icon Changer.exe
 [Releases](https://github.com/MManoah/lol-summoner-icon-changer/releases/)
 
 ## Project Overview
+**Just click on the desired icon** 
 ![](https://i.gyazo.com/649770498439431650abe138ccca2dfe.png)
 
 ## Built With
