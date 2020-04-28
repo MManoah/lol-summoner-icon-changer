@@ -36,6 +36,7 @@ def set_icon_button(entry):
 
 class MainWindow:
     def __init__(self, master):
+        image_list = None
         self.master = master
         master.title('Summoner Icon Changer - Manoah')
         master.iconbitmap('Background and Icon/Icon.ico')
@@ -49,7 +50,11 @@ class MainWindow:
         background.image = background_image
         background.place(relwidth=1, relheight=1)
         path = 'Summoner Icon Pictures'  # Summoner Icon Pictures folder
-        image_list = [f for f in os.listdir(path) if isfile(join(path, f))]  # Creates a list of the pictures
+        try:
+            image_list = [f for f in os.listdir(path) if isfile(join(path, f))]  # Creates a list of the pictures
+        except:
+            messagebox.showerror("Error", "SUMMONER ICON PICTURES COULD NOT BE FOUND")
+            exit(1)
         relx = 0.05
         rely = 0.05
         for i in range(len(image_list)):
@@ -93,4 +98,4 @@ if __name__ == '__main__':
         root.mainloop()
     else:
         messagebox.showerror("Error", "PLEASE LOGIN TO LEAGUE OF LEGENDS")
-        exit(0)
+        exit(1)
