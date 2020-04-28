@@ -13,6 +13,7 @@ connector = Connector()
 global SummonerIcon
 
 
+# Makes a request to set the proper icon by the icon code
 def set_icon_button(entry):
     global SummonerIcon
     SummonerIcon = entry
@@ -63,7 +64,7 @@ class MainWindow:
                 rely += 0.15
 
 
-# Function to place icons on the label called background
+# Places icons on the label called background
 def placement(path, background, icon_button, x, y):
     image = Image.open(path)
     image = image.resize((50, 50), Image.ANTIALIAS)
